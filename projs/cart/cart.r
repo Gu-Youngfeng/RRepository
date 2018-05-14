@@ -7,6 +7,10 @@ round.down <- function(samples){
 	return (round(samples/10+1/2))
 }
 
+mean.re <- function(actual, predict){
+	return (abs(actual - predict)/actual)
+}
+
 # build CART
 buildCart <- function(train){
 	# step 1: stop criteria setting
@@ -63,6 +67,7 @@ evaluateCART <- function(train, test){
 # for each dataset
 forDataset <- function(path){
 	data <- read.csv(path, header=TRUE, sep=",")
+	set.seed(0)
 	folds <- createFolds(y=data$AverageTimePerIteration, k=500)
 	# folds is a list of vector, folds[[i]] means selected index in the i-th fold.
 
@@ -73,10 +78,15 @@ forDataset <- function(path){
 	test <- data[folds[[1]],]
 
 	predicts <- evaluateCART (train, test)
-	print(length(predicts))
-	for(i in 1:length(predicts)){
+	print(nrow(test))
+	sum <- 0.0
+	for(i in 1:nrow(test)){
+		sum <- sum + mean.re(actuals[i], predicts[[i]])
 		cat("predicted:", predicts[[i]], " actuals:", actuals[i], "\n")
 	}
+	acc <- 1-sum/nrow(test)
+	print(acc)
+	
 }
 
 
