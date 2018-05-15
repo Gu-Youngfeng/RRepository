@@ -3,19 +3,28 @@
 
 # step1: read result csv from R and Python, then plot them in one figure
 # read result csv from R
-data.r <- read.csv("data/HSMGP-R.csv")
+
+# png(file="SQL.png")
+
+data.r <- read.csv("data/SQL-R.csv") # modify #
+data.r <- data.r[order(data.r$actual),] # sort by actual attribute
 predict1 <- data.r$predict
 actual1 <- data.r$actual
 
-plot(sort(actual1), type="l", col="green")
-lines(sort(predict1), type="l", col="blue")
+windows(width=16,height=4)
+par(mfrow=c(1,2))
+
+plot(actual1, type="l", col="green", xlab="configuration index", ylab="performance", main="(a)Performance Prediction Using R")
+lines(predict1, type="l", col="blue")
 
 # read result csv from Python
-data.python <- read.csv("data/HSMGP-Python.csv")
+data.python <- read.csv("data/SQL-Python.csv") # modify #
+data.python <- data.python[order(data.python$actual),] # sort by actual attribute
 actual2 <- data.python$actual
 predict2 <- data.python$predict
 
-lines(sort(predict2), type="l", col="red")
+plot(actual2, type="l", col="green", xlab="configuration index", ylab="performance", main="(b)Performance Prediction Using Python")
+lines(predict2, type="l", col="red")
 
 # step2: calculate their mean relative errors
 
@@ -36,3 +45,5 @@ for(index in nrow(data.python)){
 acc2 <- 1 - (sum2)/nrow(data.python)
 
 cat("[R acc]:", acc1, "[P acc]:", acc2)
+
+# dev.off()
