@@ -1,6 +1,12 @@
 # CART Implmentation in R ###############################
+#
+# this file provides the general approach for,
+# (1) k-fold cross validation
+# (2) parameter tuning in CART classification
+
 library(rpart)
 library(caret)
+
 # library(rattle)
 
 round.down <- function(samples){
@@ -31,24 +37,30 @@ buildCart <- function(train){
 	if(min.bucket<2){
 		min.bucket <- 2
 	}
-	cat("[min.split]:", min.split, ", [min.bucket]:", min.bucket, "\n")
+	# cat("[min.split]:", min.split, ", [min.bucket]:", min.bucket, "\n")
+
+	features.size <- length(colnames(train)) - 1
+	if(features.size >= 30){
+		features.size <- 30
+	}
 	
 	# step 2: model building
 	outCart <- rpart(
-		AverageTimePerIteration ~ .,
+		Performance ~ ., # modify #
 		train,
 		method = "anova",
 		control = rpart.control(
 				minsplit = min.split, 
 				minbucket = min.bucket,
-				cp=0
-				)
+				maxdepth = features.size,
+				cp=0,
+				usesurrogate=0,
+				maxsurrogate=0)
 		)
 	
 	# return model
-	
-	plot(outCart)
-	text(outCart)
+	# plot(outCart)
+	# text(outCart)
 	return (outCart)
 }
 
@@ -59,7 +71,6 @@ evaluateCART <- function(train, test){
 		outCart, 
 		test
 	)
-	
 	return (results)
 	
 }
@@ -68,24 +79,32 @@ evaluateCART <- function(train, test){
 forDataset <- function(path){
 	data <- read.csv(path, header=TRUE, sep=",")
 	set.seed(0)
-	folds <- createFolds(y=data$AverageTimePerIteration, k=500)
+	folds <- createFolds(y=data$Performance, k=10) # modify #
 	# folds is a list of vector, folds[[i]] means selected index in the i-th fold.
 
-	actuals <- data[folds[[1]],15]
-	#print(data[folds[[1]],15])
+	for(kf in 1:10){
+		
+		# cat("### The ", kf, "-th Prediction Result ###\n")
+		train <- data[-folds[[kf]],]
+		test <- data[folds[[kf]],]
 
-	train <- data[-folds[[1]],]
-	test <- data[folds[[1]],]
+		actuals <- data[folds[[kf]],40] # modify #
+		#print(data[folds[[kf]],40])
 
-	predicts <- evaluateCART (train, test)
-	print(nrow(test))
-	sum <- 0.0
-	for(i in 1:nrow(test)){
-		sum <- sum + mean.re(actuals[i], predicts[[i]])
-		cat("predicted:", predicts[[i]], " actuals:", actuals[i], "\n")
+		predicts <- evaluateCART (train, test)
+		# print(nrow(test))
+		# sum <- 0.0
+		for(i in 1:nrow(test)){
+			# sum <- sum + mean.re(actuals[i], predicts[[i]])
+			# cat(" actuals:", actuals[i], "predicted:", predicts[[i]], "\n")
+			output.file <- file("my.txt", "a")
+			lines <- paste(actuals[i], ",", predicts[[i]])
+			writeLines(lines, output.file)
+			close(output.file)
+		}
+		# acc <- 1-sum/nrow(test)
+		# print(acc)
 	}
-	acc <- 1-sum/nrow(test)
-	print(acc)
 	
 }
 
@@ -93,11 +112,15 @@ forDataset <- function(path){
 
 # main body #############################################
 
-forDataset("HSMGP_num.csv")
+forDataset("SQL_AllMeasurements.csv")
+# train <- read.csv("HSMGP_num.csv")
+# outCart <- buildCart(train)
+# plot(outCart)
+# text(outCart)
 
-#print(train)
-#print(summary(train))
-#print(nrow(train))
+# print(train)
+# print(summary(train))
+# print(nrow(train))
 
-#print(round(3.14))
-#print(2.4/5)
+# print(round(3.14))
+# print(2.4/5)
